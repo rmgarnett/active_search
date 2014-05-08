@@ -1,37 +1,49 @@
-% KNN_PROBABILITY_BOUND robability bound for a knn classifier.
+% KNN_PROBABILITY_BOUND probability bound for a k-NN classifier.
 %
 % This function provides a bound for
 %
-%   \max_i p(y_i | x_i, D)
+%   \max_i p(y_i = 1 | x_i, D)
 %
-% after adding additional points to the current training set, most
-% useful with the optimal_search_bound_selector selection function.
+% after adding additional points to the current training set for a
+% k-NN classifier (as implemented in knn_model.m). This bound is
+% intended to be used with expected_seach_utility_bound.
 %
-% function bound = knn_probability_bound(responses, train_ind, test_ind, ...
+% Usage:
+%
+%   bound = knn_probability_bound(responses, train_ind, test_ind, ...
 %           weights, max_weights, pseudocount, num_positives)
 %
-% inputs:
-%            data: an (n x d) matrix of input data
-%       responses: an (n x 1) vector of responses (class 1 is
-%                  tested against "any other class")
-%       train_ind: an index into data/responses indicating the
-%                  training points
-%        test_ind: an index into data/responses indicating the test
-%                  points
-%         weights: an (n x n) matrix of weights
-%     max_weights: precomputed max(weights)
-%     pseudocount: a value in [0, 1] to use as a "pseudocount"
-%   num_positives: the number of additional positive responeses to
-%                  consider
+% Inputs:
 %
-% outputs:
-%   bound: an upper bound for the probabilities of the test data
+%           problem: a struct describing the problem, containing the
+%                    fields:
 %
-% copyright (c) roman garnett, 2011--2012
+%                  points: an (n x d) data matrix for the avilable points
+%             num_classes: the number of classes
+%
+%         train_ind: a list of indices into problem.points indicating
+%                    the thus-far observed points
+%   observed_labels: a list of labels corresponding to the
+%                    observations in train_ind
+%          test_ind: a list of indices into problem.points indicating
+%                    the test points
+%           weights: an (n x n) matrix of weights
+%       max_weights: precomputed max(weights)
+%             alpha: the hyperparameter vector \alpha
+%                    (1 x problem.num_classes)
+%
+% Output:
+%
+%   bound: an upper bound for the maximum posterior probability after
+%          adding num_positives positive observations for the points
+%          in test_ind.
+%
+% See also KNN_MODEL, EXPECTED_SEARCH_UTILITY_BOUND, ACTIVE_SEARCH_BOUND_SELECTOR.
+
+% Copyright (c) 2011--2014 Roman Garnett.
 
 function bound = knn_probability_bound(~, train_ind, observed_labels, ...
-          test_ind, num_positives, weights, max_weights, prior_alpha, ...
-          prior_beta)
+          test_ind, num_positives, weights, max_weights, alpha)
 
   % transform observed_labels to handle multi-class
   positive_ind = (observed_labels == 1);
@@ -41,8 +53,8 @@ function bound = knn_probability_bound(~, train_ind, observed_labels, ...
   successes = sum(weights(test_ind, train_ind( positive_ind)), 2);
   failures  = sum(weights(test_ind, train_ind(~positive_ind)), 2);
 
-  max_alpha = (prior_alpha + successes + max_weight * num_positives);
-  min_beta  = (prior_beta  + failures);
+  max_alpha = (    alpha(1)      + successes + num_positives * max_weight);
+  min_beta  = (sum(alpha(2:end)) + failures);
 
   bound = max(max_alpha ./ (max_alpha + min_beta));
 
