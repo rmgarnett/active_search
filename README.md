@@ -1,5 +1,5 @@
-Active Search
-=============
+Active Search Toolbox for MATLAB
+================================
 
 This repository contains MATLAB code for performing _active search,_
 as described in the following paper:
